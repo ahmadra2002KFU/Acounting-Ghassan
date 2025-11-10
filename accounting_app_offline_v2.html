@@ -1,0 +1,764 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<title>النظام المحاسبي — نسخة جاهزة للاستخدام</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+  :root{--bg:#0b1220;--card:#0f172a;--ink:#e5e7eb;--muted:#93a1b1;--line:#233046;--acc:#22d3ee;--acc2:#a78bfa;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Tajawal, Segoe UI, Tahoma, Arial, sans-serif;background:var(--bg);color:var(--ink)}
+  header{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:18px}
+  .tag{padding:6px 10px;border-radius:999px;background:linear-gradient(90deg,var(--acc),var(--acc2));color:#0b1220;font-weight:700}
+  nav{margin-inline-start:auto;display:flex;gap:6px;flex-wrap:wrap}
+  nav button{background:#0b1628;border:1px solid var(--line);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer}
+  nav button.active{outline:2px solid var(--acc)}
+  .wrap{padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+  .col-2{grid-column:span 2}.col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-6{grid-column:span 6}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
+  h2{font-size:16px;margin:4px 0 10px} h3{margin:0 0 6px}
+  label{font-size:12px;color:#cbd5e1}
+  input,select{background:#071225;border:1px solid #1e2a42;color:var(--ink);padding:8px;border-radius:8px;width:100%}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+  th,td{border-bottom:1px solid var(--line);padding:8px;text-align:right}
+  th{background:#0a1a31;color:#c7d2fe;position:sticky;top:0}
+  .actions{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{background:#0b1628;border:1px solid var(--line);color:#fff;padding:8px 12px;border-radius:10px;cursor:pointer}
+  .btn.primary{background:linear-gradient(90deg,var(--acc),var(--acc2));color:#0b1220;font-weight:700;border:none}
+  .muted{color:var(--muted);font-size:12px}
+  .sticky{position:sticky;bottom:0;background:#0a1324;border-top:1px solid var(--line);padding:8px}
+  .pill{padding:2px 8px;border-radius:999px;background:#0a1324;border:1px solid var(--line);font-size:12px;display:inline-block}
+  .ok{color:#34d399}.err{color:#f87171}
+  .right{display:flex;justify-content:flex-end}
+  .print{max-width:900px;margin:0 auto;background:white;color:#111;padding:18px;border-radius:12px}
+  .print h1,.print h2{color:#111}
+  .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #ddd;padding-bottom:8px;margin-bottom:8px}
+  .signs{display:flex;gap:18px;justify-content:flex-end;margin-top:24px}
+  @media print {
+    body{background:white;color:#111}
+    header, .wrap > section:not(.active-print){display:none!important}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>النظام المحاسبي — يعمل محليًا</h1>
+  <span class="tag">FIFO · SAR · VAT 15%</span>
+  <nav>
+    <button class="tabBtn active" data-tab="tab-dashboard">لوحة التحكم</button>
+    <button class="tabBtn" data-tab="tab-masters">القواميس</button>
+    <button class="tabBtn" data-tab="tab-vouchers">المستندات</button>
+    <button class="tabBtn" data-tab="tab-reports">التقارير</button>
+    <button class="tabBtn" data-tab="tab-print">نماذج الطباعة</button>
+    <button class="tabBtn" data-tab="tab-settings">الإعدادات</button>
+  </nav>
+</header>
+
+<div class="wrap">
+  <section id="tab-dashboard" class="tab card">
+    <h2>نظرة عامة</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="row">
+          <div class="col-3"><div class="pill">العملة الوظيفية</div><h3 id="k-func">—</h3></div>
+          <div class="col-3"><div class="pill">VAT</div><h3 id="k-vat">—</h3></div>
+          <div class="col-3"><div class="pill">عدد الفروع</div><h3 id="k-branches">—</h3></div>
+          <div class="col-3"><div class="pill">مراكز التكلفة</div><h3 id="k-cc">—</h3></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="pill">إرشاد</div>
+        <p class="muted">احفظ نسخة احتياطية من تبويب <b>الإعدادات</b>. تمت إضافة <b>قائمة أسعار</b> و<b>ربط محاسبي للأصناف</b> و<b>قوائم مالية</b> ونماذج <b>طباعة فواتير/سندات</b>.</p>
+        <div class="actions">
+          <button class="btn" onclick="exportAll()">تصدير نسخة احتياطية</button>
+          <label class="btn">استيراد <input type="file" accept=".json" style="display:none" onchange="importAll(event)"></label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-masters" class="tab card" style="display:none">
+    <h2>القواميس</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>الفروع</h3>
+        <table id="tblBranches"><thead><tr><th>ID</th><th>الفرع</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>مراكز التكلفة</h3>
+        <table id="tblCC"><thead><tr><th>ID</th><th>المركز</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>العملات</h3>
+        <table id="tblCur"><thead><tr><th>الكود</th><th>الاسم</th><th>وظيفية</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>الأصناف</h3>
+        <table id="tblItems"><thead><tr><th>SKU</th><th>الاسم</th><th>الفئة</th><th>الوحدة</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>قائمة الأسعار</h3>
+        <table id="tblPrice"><thead><tr><th>SKU</th><th>السعر الافتراضي (بدون VAT)</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>الربط المحاسبي للأصناف (GL Mapping)</h3>
+        <table id="tblItemMap"><thead><tr><th>فئة</th><th>حساب مخزون</th><th>حساب مبيعات</th><th>حساب تكلفة</th></tr></thead><tbody></tbody></table>
+        <div class="muted">يستَخدم في ترحيل المبيعات/المشتريات تلقائيًا.</div>
+      </div>
+      <div class="card">
+        <h3>شجرة الحسابات (موسعة)</h3>
+        <table id="tblCOA"><thead><tr><th>الكود</th><th>الاسم</th><th>طبيعة</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>أكواد ضريبة القيمة المضافة</h3>
+        <table id="tblTax"><thead><tr><th>الكود</th><th>النوع</th><th>النسبة</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-vouchers" class="tab" style="display:none">
+    <div class="card">
+      <h2>المستندات</h2>
+      <div class="actions">
+        <button class="btn primary" onclick="uiShow('sale')">فاتورة مبيعات</button>
+        <button class="btn" onclick="uiShow('purchase')">فاتورة مشتريات</button>
+        <button class="btn" onclick="uiShow('receipt')">سند قبض</button>
+        <button class="btn" onclick="uiShow('payment')">سند صرف</button>
+        <button class="btn" onclick="uiShow('journal')">قيد يومية</button>
+        <button class="btn" onclick="uiShow('returnSale')">مرتجع مبيعات</button>
+        <button class="btn" onclick="uiShow('returnPurchase')">مرتجع مشتريات</button>
+      </div>
+    </div>
+    <div id="voucher-forms" class="grid"></div>
+
+    <div class="card">
+      <h3>آخر المستندات</h3>
+      <table id="tblDocs"><thead><tr><th>رقم</th><th>النوع</th><th>التاريخ</th><th>الإجمالي</th><th>طباعة</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="card">
+      <h3>ملخص القيود المُرحّلة (آخر 100)</h3>
+      <table id="tblJE"><thead><tr><th>تاريخ</th><th>المستند</th><th>الحساب</th><th>مدين</th><th>دائن</th><th>فرع</th><th>مركز</th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+
+  <section id="tab-reports" class="tab card" style="display:none">
+    <h2>التقارير</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>دفتر اليومية</h3>
+        <div class="row">
+          <div class="col-3"><label>من</label><input id="r1from" type="date"></div>
+          <div class="col-3"><label>إلى</label><input id="r1to" type="date"></div>
+          <div class="col-3"><label>فرع</label><select id="r1b"></select></div>
+          <div class="col-3"><label>مركز</label><select id="r1c"></select></div>
+        </div>
+        <div class="actions"><button class="btn" onclick="reportJournal()">عرض</button></div>
+        <table id="repJournal"><thead><tr><th>تاريخ</th><th>مستند</th><th>الحساب</th><th>مدين</th><th>دائن</th><th>فرع</th><th>مركز</th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <div class="card">
+        <h3>دفتر الأستاذ</h3>
+        <div class="row">
+          <div class="col-6"><label>الحساب</label><input id="r2acc" placeholder="مثال: 1-01-01-001-001"></div>
+          <div class="col-3"><label>من</label><input id="r2from" type="date"></div>
+          <div class="col-3"><label>إلى</label><input id="r2to" type="date"></div>
+        </div>
+        <div class="actions"><button class="btn" onclick="reportLedger()">عرض</button></div>
+        <table id="repLedger"><thead><tr><th>تاريخ</th><th>مستند</th><th>مدين</th><th>دائن</th><th>رصيد</th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <div class="card">
+        <h3>ميزان المراجعة</h3>
+        <div class="actions"><button class="btn" onclick="reportTB()">تحديث</button></div>
+        <table id="repTB"><thead><tr><th>الحساب</th><th>الاسم</th><th>مدين</th><th>دائن</th><th>الرصيد</th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <div class="card">
+        <h3>قائمة الدخل</h3>
+        <div class="actions"><button class="btn" onclick="reportIS()">تحديث</button></div>
+        <table id="repIS"><thead><tr><th>البند</th><th>القيمة</th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <div class="card">
+        <h3>قائمة المركز المالي</h3>
+        <div class="actions"><button class="btn" onclick="reportBS()">تحديث</button></div>
+        <table id="repBS"><thead><tr><th>البند</th><th>القيمة</th></tr></thead><tbody></tbody></table>
+        <div id="bs-check" class="muted"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-print" class="tab card" style="display:none">
+    <h2>نماذج الطباعة</h2>
+    <div class="muted">اختر مستندًا من الجدول في تبويب <b>المستندات</b> واضغط "طباعة".</div>
+    <div id="printHost"></div>
+  </section>
+
+  <section id="tab-settings" class="tab card" style="display:none">
+    <h2>الإعدادات والنسخ الاحتياطي</h2>
+    <div class="actions">
+      <button class="btn" onclick="exportAll()">تصدير كامل</button>
+      <label class="btn">استيراد<input type="file" accept=".json" style="display:none" onchange="importAll(event)"></label>
+      <button class="btn" onclick="wipeAll()">إعادة تعيين</button>
+    </div>
+  </section>
+</div>
+
+<script>
+const DBKEY="lightERP2";
+const today=()=>new Date().toISOString().slice(0,10);
+const fmt=n=>(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+// ---- Defaults (expanded COA, items, price list, item GL mapping) ----
+function branchName(id){const m={1:"الرياض",2:"جدة",3:"مكة",4:"المدينة المنورة",5:"الدمام",6:"الخبر",7:"الطائف",8:"تبوك",9:"بريدة",10:"أبها"};return m[id]||("فرع "+id);}
+
+const defaults={
+  config:{functionalCurrency:"SAR",vatRate:0.15,costing:"FIFO",currencies:["SAR","USD","EUR"]},
+  branches:[{id:1,name:"الرياض"},{id:2,name:"جدة"},{id:3,name:"مكة"},{id:4,name:"المدينة المنورة"},{id:5,name:"الدمام"},{id:6,name:"الخبر"},{id:7,name:"الطائف"},{id:8,name:"تبوك"},{id:9,name:"بريدة"},{id:10,name:"أبها"}],
+  costCenters:[].concat(...[1,2,3,4,5,6,7,8,9,10].map(b=>[{id:(String(b).padStart(2,'0')+'01'),name:`${branchName(b)} - مبيعات`},{id:(String(b).padStart(2,'0')+'02'),name:`${branchName(b)} - إدارة`}])),
+  currencies:[{code:"SAR",name:"Saudi Riyal",functional:true},{code:"USD",name:"US Dollar",functional:false},{code:"EUR",name:"Euro",functional:false}],
+
+  // Items (20)
+  items:[
+    {sku:"EL-IPH13-128",name:"هاتف ذكي iPhone 13 128GB",uom:"قطعة",cat4:"إلكترونيات",cat5:"هواتف"},
+    {sku:"EL-GS23-256",name:"هاتف ذكي Galaxy S23 256GB",uom:"قطعة",cat4:"إلكترونيات",cat5:"هواتف"},
+    {sku:"EL-LTP-15Y",name:"حاسوب محمول 15\" موديل Y",uom:"قطعة",cat4:"إلكترونيات",cat5:"حواسيب"},
+    {sku:"EL-LTP-14X",name:"حاسوب محمول 14\" موديل X",uom:"قطعة",cat4:"إلكترونيات",cat5:"حواسيب"},
+    {sku:"EL-TAB-10A",name:"جهاز لوحي 10\" موديل A",uom:"قطعة",cat4:"إلكترونيات",cat5:"أجهزة لوحية"},
+    {sku:"EL-TV-55UHD",name:"شاشة تلفاز 55\" UHD",uom:"قطعة",cat4:"إلكترونيات",cat5:"شاشات"},
+    {sku:"EL-RTR-AC",name:"راوتر مزدوج النطاق AC",uom:"قطعة",cat4:"إلكترونيات",cat5:"شبكات"},
+    {sku:"EL-HPH-BT",name:"سماعات رأس لاسلكية BT",uom:"قطعة",cat4:"إلكترونيات",cat5:"ملحقات صوت"},
+    {sku:"EL-SWATCH",name:"ساعة ذكية موديل S",uom:"قطعة",cat4:"إلكترونيات",cat5:"أجهزة قابلة للارتداء"},
+    {sku:"HM-BLND-A",name:"خلاط كهربائي موديل A",uom:"قطعة",cat4:"أدوات منزلية",cat5:"أجهزة صغيرة"},
+    {sku:"HM-KTL-B",name:"غلاية ماء كهربائية B",uom:"قطعة",cat4:"أدوات منزلية",cat5:"أجهزة صغيرة"},
+    {sku:"HM-VCM-2K",name:"مكنسة كهربائية 2 كيلوبايت",uom:"قطعة",cat4:"أدوات منزلية",cat5:"تنظيف"},
+    {sku:"HM-MWO-25L",name:"ميكروويف 25 لتر",uom:"قطعة",cat4:"أدوات منزلية",cat5:"مطابخ"},
+    {sku:"HM-AFR-5L",name:"قلاية هوائية 5 لتر",uom:"قطعة",cat4:"أدوات منزلية",cat5:"مطابخ"},
+    {sku:"HM-IRON-S",name:"مكواة بخار منزلية",uom:"قطعة",cat4:"أدوات منزلية",cat5:"أجهزة صغيرة"},
+    {sku:"HM-MXR-600",name:"عجانة 600 واط",uom:"قطعة",cat4:"أدوات منزلية",cat5:"مطابخ"},
+    {sku:"HM-FAN-16",name:"مروحة أرضية 16\"",uom:"قطعة",cat4:"أدوات منزلية",cat5:"تبريد وتهوية"},
+    {sku:"HM-HET-2K",name:"مدفأة كهربائية 2000 واط",uom:"قطعة",cat4:"أدوات منزلية",cat5:"تدفئة"},
+    {sku:"HM-CMKR-1L",name:"صانعة قهوة 1 لتر",uom:"قطعة",cat4:"أدوات منزلية",cat5:"مطابخ"},
+    {sku:"HM-TSTR-4S",name:"محمصة خبز 4 شرائح",uom:"قطعة",cat4:"أدوات منزلية",cat5:"مطابخ"}
+  ],
+
+  // Price list (default) — without VAT
+  prices:{
+    "EL-IPH13-128":5000,"EL-GS23-256":4200,"EL-LTP-15Y":3500,"EL-LTP-14X":3800,"EL-TAB-10A":1500,
+    "EL-TV-55UHD":2400,"EL-RTR-AC":250,"EL-HPH-BT":300,"EL-SWATCH":900,
+    "HM-BLND-A":220,"HM-KTL-B":180,"HM-VCM-2K":650,"HM-MWO-25L":500,"HM-AFR-5L":450,"HM-IRON-S":140,
+    "HM-MXR-600":550,"HM-FAN-16":200,"HM-HET-2K":260,"HM-CMKR-1L":320,"HM-TSTR-4S":170
+  },
+
+  // Item GL mapping by category (cat5)
+  itemMap:{
+    "هواتف":      {inv:"1-03-01-010-001",sales:"4-01-01-001-000",cogs:"5-01-01-001-000"},
+    "حواسيب":     {inv:"1-03-01-010-002",sales:"4-01-01-002-000",cogs:"5-01-01-002-000"},
+    "أجهزة لوحية":{inv:"1-03-01-020-000",sales:"4-01-01-003-000",cogs:"5-01-01-003-000"},
+    "شاشات":      {inv:"1-03-01-030-000",sales:"4-01-01-004-000",cogs:"5-01-01-004-000"},
+    "شبكات":      {inv:"1-03-01-040-000",sales:"4-01-01-005-000",cogs:"5-01-01-005-000"},
+    "ملحقات صوت": {inv:"1-03-01-050-000",sales:"4-01-01-006-000",cogs:"5-01-01-006-000"},
+    "أجهزة قابلة للارتداء":{inv:"1-03-01-060-000",sales:"4-01-01-007-000",cogs:"5-01-01-007-000"},
+    "أجهزة صغيرة":{inv:"1-03-02-010-000",sales:"4-01-02-001-000",cogs:"5-01-02-001-000"},
+    "مطابخ":      {inv:"1-03-02-020-000",sales:"4-01-02-002-000",cogs:"5-01-02-002-000"},
+    "تنظيف":      {inv:"1-03-02-030-000",sales:"4-01-02-003-000",cogs:"5-01-02-003-000"},
+    "تبريد وتهوية":{inv:"1-03-02-040-000",sales:"4-01-02-004-000",cogs:"5-01-02-004-000"},
+    "تدفئة":      {inv:"1-03-02-050-000",sales:"4-01-02-005-000",cogs:"5-01-02-005-000"}
+  },
+
+  // Expanded COA (subset but wide enough)
+  coa:[
+    // نقد وبنوك
+    {code:"1-01-01-001-001",name:"صندوق المقر الرئيسي",side:"D"},
+    {code:"1-01-02-001-001",name:"حساب جاري - بنك الأهلي (ريال)",side:"D"},
+    // ذمم
+    {code:"1-02-01-000-000",name:"العملاء (رئيسي)",side:"D"},
+    {code:"1-02-02-000-000",name:"أوراق قبض",side:"D"},
+    // مخزون — إلكترونيات
+    {code:"1-03-01-010-000",name:"مخزون إلكترونيات (رئيسي)",side:"D"},
+    {code:"1-03-01-010-001",name:"مخزون - هواتف",side:"D"},
+    {code:"1-03-01-010-002",name:"مخزون - حواسيب",side:"D"},
+    {code:"1-03-01-020-000",name:"مخزون - أجهزة لوحية",side:"D"},
+    {code:"1-03-01-030-000",name:"مخزون - شاشات",side:"D"},
+    {code:"1-03-01-040-000",name:"مخزون - شبكات",side:"D"},
+    {code:"1-03-01-050-000",name:"مخزون - ملحقات صوت",side:"D"},
+    {code:"1-03-01-060-000",name:"مخزون - أجهزة قابلة للارتداء",side:"D"},
+    // مخزون — أدوات منزلية
+    {code:"1-03-02-010-000",name:"مخزون - أجهزة صغيرة",side:"D"},
+    {code:"1-03-02-020-000",name:"مخزون - مطابخ",side:"D"},
+    {code:"1-03-02-030-000",name:"مخزون - تنظيف",side:"D"},
+    {code:"1-03-02-040-000",name:"مخزون - تبريد وتهوية",side:"D"},
+    {code:"1-03-02-050-000",name:"مخزون - تدفئة",side:"D"},
+    // بضاعة بالطريق
+    {code:"1-03-99-000-000",name:"بضاعة بالطريق",side:"D"},
+
+    // موردون/ضرائب
+    {code:"2-01-01-000-000",name:"موردون (رئيسي)",side:"C"},
+    {code:"2-01-01-001-001",name:"مورد إلكترونيات - ABC",side:"C"},
+    {code:"2-02-01-001-000",name:"ضريبة قيمة مضافة مخرجات 15%",side:"C"},
+    {code:"2-03-01-001-000",name:"ضريبة قيمة مضافة مدخلات 15%",side:"D"},
+    {code:"2-04-01-000-000",name:"رسوم جمركية مستحقة",side:"C"},
+
+    // حقوق ملكية
+    {code:"3-01-01-001-000",name:"رأس المال - الشريك أ",side:"C"},
+    {code:"3-02-01-001-000",name:"أرباح مبقاة - سنوات سابقة",side:"C"},
+
+    // إيرادات (سلاسل)
+    {code:"4-01-01-000-000",name:"مبيعات إلكترونيات (رئيسي)",side:"C"},
+    {code:"4-01-01-001-000",name:"مبيعات - هواتف",side:"C"},
+    {code:"4-01-01-002-000",name:"مبيعات - حواسيب",side:"C"},
+    {code:"4-01-01-003-000",name:"مبيعات - أجهزة لوحية",side:"C"},
+    {code:"4-01-01-004-000",name:"مبيعات - شاشات",side:"C"},
+    {code:"4-01-01-005-000",name:"مبيعات - شبكات",side:"C"},
+    {code:"4-01-01-006-000",name:"مبيعات - ملحقات صوت",side:"C"},
+    {code:"4-01-01-007-000",name:"مبيعات - أجهزة قابلة للارتداء",side:"C"},
+    {code:"4-01-02-001-000",name:"مبيعات - أجهزة منزلية صغيرة",side:"C"},
+    {code:"4-01-02-002-000",name:"مبيعات - مطابخ",side:"C"},
+    {code:"4-01-02-003-000",name:"مبيعات - تنظيف",side:"C"},
+    {code:"4-01-02-004-000",name:"مبيعات - تبريد وتهوية",side:"C"},
+    {code:"4-01-02-005-000",name:"مبيعات - تدفئة",side:"C"},
+    {code:"4-02-01-000-000",name:"مردودات مبيعات",side:"D"},
+
+    // تكلفة مبيعات
+    {code:"5-01-01-001-000",name:"تكلفة المبيعات - هواتف",side:"D"},
+    {code:"5-01-01-002-000",name:"تكلفة المبيعات - حواسيب",side:"D"},
+    {code:"5-01-01-003-000",name:"تكلفة المبيعات - أجهزة لوحية",side:"D"},
+    {code:"5-01-01-004-000",name:"تكلفة المبيعات - شاشات",side:"D"},
+    {code:"5-01-01-005-000",name:"تكلفة المبيعات - شبكات",side:"D"},
+    {code:"5-01-01-006-000",name:"تكلفة المبيعات - ملحقات صوت",side:"D"},
+    {code:"5-01-01-007-000",name:"تكلفة المبيعات - أجهزة قابلة للارتداء",side:"D"},
+    {code:"5-01-02-001-000",name:"تكلفة المبيعات - أجهزة منزلية صغيرة",side:"D"},
+    {code:"5-01-02-002-000",name:"تكلفة المبيعات - مطابخ",side:"D"},
+    {code:"5-01-02-003-000",name:"تكلفة المبيعات - تنظيف",side:"D"},
+    {code:"5-01-02-004-000",name:"تكلفة المبيعات - تبريد وتهوية",side:"D"},
+    {code:"5-01-02-005-000",name:"تكلفة المبيعات - تدفئة",side:"D"},
+    {code:"5-02-03-000-000",name:"جمارك وارد (ضمن التكلفة)",side:"D"},
+
+    // مصاريف
+    {code:"6-02-01-001-000",name:"إيجار - فرع الرياض",side:"D"},
+    {code:"6-02-02-000-000",name:"رواتب إدارية",side:"D"},
+    {code:"6-02-03-000-000",name:"كهرباء ومياه",side:"D"},
+    {code:"6-02-04-000-000",name:"اتصالات وإنترنت",side:"D"},
+    {code:"6-03-01-000-000",name:"مصروف الإهلاك",side:"D"},
+
+    // أخرى
+    {code:"7-01-01-000-000",name:"إيرادات أخرى",side:"C"},
+    {code:"7-02-01-000-000",name:"مصاريف أخرى",side:"D"},
+
+    // ضرائب/زكاة
+    {code:"8-01-01-001-000",name:"مخصص الزكاة/الضريبة - 2025",side:"C"},
+    {code:"8-02-01-000-000",name:"تسويات ضريبة القيمة المضافة",side:"C"}
+  ],
+
+  taxes:[
+    {code:"VAT15OUT",type:"OUTPUT",rate:0.15,gl:"2-02-01-001-000"},
+    {code:"VAT15IN",type:"INPUT",rate:0.15,gl:"2-03-01-001-000"},
+    {code:"RCM15",type:"RCM",rate:0.15,glOut:"2-02-01-001-000",glIn:"2-03-01-001-000"}
+  ],
+
+  journal:[],
+  docs:[],     // stored documents for printing
+  stockBatches:{}
+};
+
+function loadDB(){const raw=localStorage.getItem(DBKEY); if(!raw){localStorage.setItem(DBKEY, JSON.stringify(defaults)); return JSON.parse(JSON.stringify(defaults));} try{return JSON.parse(raw);}catch(e){return JSON.parse(JSON.stringify(defaults));}}
+function saveDB(db){localStorage.setItem(DBKEY, JSON.stringify(db));}
+let db=loadDB();
+
+// UI navigation
+document.querySelectorAll(".tabBtn").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tabBtn").forEach(x=>x.classList.remove("active")); b.classList.add("active");
+  document.querySelectorAll(".tab").forEach(t=>t.style.display="none");
+  document.getElementById(b.dataset.tab).style.display="";
+});
+
+function row(html){const tr=document.createElement('tr'); tr.innerHTML=html; return tr;}
+
+function refreshMasters(){
+  document.getElementById("k-func").textContent=db.config.functionalCurrency;
+  document.getElementById("k-vat").textContent=(db.config.vatRate*100).toFixed(0)+"%";
+  document.getElementById("k-branches").textContent=db.branches.length;
+  document.getElementById("k-cc").textContent=db.costCenters.length;
+  // tables
+  const b=document.querySelector("#tblBranches tbody"); b.innerHTML=""; db.branches.forEach(x=>b.appendChild(row(`<td>${x.id}</td><td>${x.name}</td>`)));
+  const c=document.querySelector("#tblCC tbody"); c.innerHTML=""; db.costCenters.forEach(x=>c.appendChild(row(`<td>${x.id}</td><td>${x.name}</td>`)));
+  const cu=document.querySelector("#tblCur tbody"); cu.innerHTML=""; db.currencies.forEach(x=>cu.appendChild(row(`<td>${x.code}</td><td>${x.name}</td><td>${x.functional?'نعم':'لا'}</td>`)));
+  const it=document.querySelector("#tblItems tbody"); it.innerHTML=""; db.items.forEach(x=>it.appendChild(row(`<td>${x.sku}</td><td>${x.name}</td><td>${x.cat4} / ${x.cat5}</td><td>${x.uom}</td>`)));
+  const pl=document.querySelector("#tblPrice tbody"); pl.innerHTML=""; db.items.forEach(x=>pl.appendChild(row(`<td>${x.sku}</td><td>${fmt(db.prices[x.sku]||0)}</td>`)));
+  const mp=document.querySelector("#tblItemMap tbody"); mp.innerHTML=""; Object.entries(db.itemMap).forEach(([k,v])=>mp.appendChild(row(`<td>${k}</td><td>${v.inv}</td><td>${v.sales}</td><td>${v.cogs}</td>`)));
+  const ca=document.querySelector("#tblCOA tbody"); ca.innerHTML=""; db.coa.forEach(a=>ca.appendChild(row(`<td>${a.code}</td><td>${a.name}</td><td>${a.side==='D'?'مدين':'دائن'}</td>`)));
+  const tx=document.querySelector("#tblTax tbody"); tx.innerHTML=""; db.taxes.forEach(t=>tx.appendChild(row(`<td>${t.code}</td><td>${t.type}</td><td>${(t.rate*100).toFixed(0)}%</td>`)));
+  // report filters
+  const r1b=document.getElementById("r1b"); r1b.innerHTML="<option value=''>الكل</option>"+db.branches.map(x=>`<option>${x.name}</option>`).join("");
+  const r1c=document.getElementById("r1c"); r1c.innerHTML="<option value=''>الكل</option>"+db.costCenters.map(x=>`<option>${x.name}</option>`).join("");
+  refreshJE(); refreshDocsTable();
+}
+refreshMasters();
+
+// ------- Posting / Inventory FIFO -------
+function postLine(docDate, docNo, acc, debit, credit, branch, cc){
+  db.journal.push({docDate, docNo, acc, debit:+(debit||0), credit:+(credit||0), branch:branch||"", cc:cc||""});
+}
+function fifoAdd(sku, qty, unitCost){
+  if(!db.stockBatches[sku]) db.stockBatches[sku]=[];
+  db.stockBatches[sku].push({qty:+qty, unitCost:+unitCost});
+}
+function fifoConsume(sku, qty){
+  let need=+qty, cost=0;
+  const list=db.stockBatches[sku]||[];
+  while(need>0 && list.length){
+    const b=list[0]; const take=Math.min(need, b.qty);
+    cost += take*b.unitCost; b.qty -= take; need -= take;
+    if(b.qty<=0) list.shift();
+  }
+  if(need>0) throw new Error("كمية غير كافية للصنف: "+sku);
+  return cost;
+}
+function glOfCat(cat5){ return db.itemMap[cat5] || db.itemMap["أجهزة صغيرة"]; }
+
+// ------- Forms -------
+const forms={
+  sale:() => `
+  <div class="card"><h3>فاتورة مبيعات</h3>
+    <div class="row">
+      <div class="col-3"><label>التاريخ</label><input id="s-date" type="date" value="${today()}"></div>
+      <div class="col-3"><label>الفرع</label><select id="s-branch">${db.branches.map(x=>`<option>${x.name}</option>`)}</select></div>
+      <div class="col-3"><label>المركز</label><select id="s-cc">${db.costCenters.map(x=>`<option>${x.name}</option>`)}</select></div>
+      <div class="col-3"><label>التحصيل</label><select id="s-cash"><option>نقدي</option><option>آجل</option></select></div>
+    </div>
+    <div class="row">
+      <div class="col-6"><label>الصنف</label><select id="s-sku" onchange="autoPrice()">${db.items.map(x=>`<option value="${x.sku}">${x.sku} — ${x.name}</option>`)}</select></div>
+      <div class="col-2"><label>كمية</label><input id="s-qty" type="number" value="1"></div>
+      <div class="col-2"><label>سعر الوحدة (بدون VAT)</label><input id="s-price" type="number" step="0.01"></div>
+      <div class="col-2"><label>العملة</label><select id="s-cur">${db.currencies.map(x=>`<option ${x.functional?'selected':''}>${x.code}</option>`)}</select></div>
+    </div>
+    <div class="actions sticky">
+      <button class="btn primary" onclick="doSale()">ترحيل</button>
+      <button class="btn" onclick="previewSale()">معاينة الطباعة</button>
+      <span id="s-msg" class="muted"></span>
+    </div>
+  </div>`,
+  purchase:() => `
+  <div class="card"><h3>فاتورة مشتريات</h3>
+    <div class="row">
+      <div class="col-3"><label>التاريخ</label><input id="p-date" type="date" value="${today()}"></div>
+      <div class="col-3"><label>الفرع</label><select id="p-branch">${db.branches.map(x=>`<option>${x.name}</option>`)}</select></div>
+      <div class="col-3"><label>المركز</label><select id="p-cc">${db.costCenters.map(x=>`<option>${x.name}</option>`)}</select></div>
+      <div class="col-3"><label>الدفع</label><select id="p-cash"><option>آجل</option><option>نقدي</option></select></div>
+    </div>
+    <div class="row">
+      <div class="col-4"><label>الصنف</label><select id="p-sku">${db.items.map(x=>`<option value="${x.sku}">${x.sku} — ${x.name}</option>`)}</select></div>
+      <div class="col-2"><label>كمية</label><input id="p-qty" type="number" value="1"></div>
+      <div class="col-3"><label>سعر الوحدة (بدون VAT)</label><input id="p-price" type="number" value="1000"></div>
+      <div class="col-3"><label>حساب المورد</label><input id="p-supplier" placeholder="2-01-01-001-001"></div>
+    </div>
+    <div class="actions sticky">
+      <button class="btn primary" onclick="doPurchase()">ترحيل</button>
+      <button class="btn" onclick="previewPurchase()">معاينة الطباعة</button>
+      <span id="p-msg" class="muted"></span>
+    </div>
+  </div>`,
+  receipt:() => `
+  <div class="card"><h3>سند قبض</h3>
+    <div class="row">
+      <div class="col-3"><label>التاريخ</label><input id="r-date" type="date" value="${today()}"></div>
+      <div class="col-3"><label>من حساب</label><input id="r-from" placeholder="عميل/إيراد"></div>
+      <div class="col-3"><label>إلى</label><select id="r-to"><option>1-01-01-001-001</option><option>1-01-02-001-001</option></select></div>
+      <div class="col-3"><label>المبلغ</label><input id="r-amt" type="number"></div>
+    </div>
+    <div class="actions sticky"><button class="btn primary" onclick="doReceipt()">ترحيل</button><button class="btn" onclick="previewReceipt()">معاينة</button><span id="rcp-msg" class="muted"></span></div>
+  </div>`,
+  payment:() => `
+  <div class="card"><h3>سند صرف</h3>
+    <div class="row">
+      <div class="col-3"><label>التاريخ</label><input id="py-date" type="date" value="${today()}"></div>
+      <div class="col-3"><label>من</label><select id="py-from"><option>1-01-01-001-001</option><option>1-01-02-001-001</option></select></div>
+      <div class="col-3"><label>إلى حساب</label><input id="py-to" placeholder="مورد/مصروف"></div>
+      <div class="col-3"><label>المبلغ</label><input id="py-amt" type="number"></div>
+    </div>
+    <div class="actions sticky"><button class="btn primary" onclick="doPayment()">ترحيل</button><button class="btn" onclick="previewPayment()">معاينة</button><span id="pay-msg" class="muted"></span></div>
+  </div>`,
+  journal:() => `
+  <div class="card"><h3>قيد يومية</h3>
+    <div class="row">
+      <div class="col-3"><label>التاريخ</label><input id="j-date" type="date" value="${today()}"></div>
+      <div class="col-3"><label>مدين</label><input id="j-dr" placeholder="1-..."></div>
+      <div class="col-3"><label>دائن</label><input id="j-cr" placeholder="2-..."></div>
+      <div class="col-3"><label>المبلغ</label><input id="j-amt" type="number"></div>
+    </div>
+    <div class="actions sticky"><button class="btn primary" onclick="doJournal()">ترحيل</button><button class="btn" onclick="previewJV()">معاينة</button><span id="j-msg" class="muted"></span></div>
+  </div>`,
+  returnSale:() => `
+  <div class="card"><h3>مرتجع مبيعات</h3>
+    <div class="row">
+      <div class="col-4"><label>SKU</label><input id="rs-sku"></div>
+      <div class="col-2"><label>كمية</label><input id="rs-qty" type="number" value="1"></div>
+      <div class="col-3"><label>سعر البيع (بدون VAT)</label><input id="rs-price" type="number" value="1000"></div>
+      <div class="col-3"><label>طريقة الرد</label><select id="rs-cash"><option>نقدي</option><option>ذمم عميل</option></select></div>
+    </div>
+    <div class="actions sticky"><button class="btn primary" onclick="doReturnSale()">ترحيل</button><button class="btn" onclick="previewCRN()">معاينة</button><span id="rs-msg" class="muted"></span></div>
+  </div>`,
+  returnPurchase:() => `
+  <div class="card"><h3>مرتجع مشتريات</h3>
+    <div class="row">
+      <div class="col-4"><label>SKU</label><input id="rp-sku"></div>
+      <div class="col-2"><label>كمية</label><input id="rp-qty" type="number" value="1"></div>
+      <div class="col-3"><label>سعر الشراء (بدون VAT)</label><input id="rp-price" type="number" value="1000"></div>
+      <div class="col-3"><label>حساب المورد</label><input id="rp-supplier" placeholder="2-01-..."></div>
+    </div>
+    <div class="actions sticky"><button class="btn primary" onclick="doReturnPurchase()">ترحيل</button><button class="btn" onclick="previewDRN()">معاينة</button><span id="rp-msg" class="muted"></span></div>
+  </div>`
+};
+function uiShow(kind){ document.getElementById("voucher-forms").innerHTML=forms[kind](); autoPrice(); }
+
+function autoPrice(){
+  const s=document.getElementById("s-sku"); if(!s) return;
+  const sku=s.value; const p=db.prices[sku]||0; const f=document.getElementById("s-price"); if(f) f.value=p;
+}
+
+// ------- Document saving/printing helpers -------
+function addDoc(doc){ db.docs.push(doc); if(db.docs.length>200) db.docs.shift(); saveDB(db); refreshDocsTable(); }
+function refreshDocsTable(){
+  const tb=document.querySelector("#tblDocs tbody"); if(!tb) return;
+  tb.innerHTML="";
+  db.docs.slice(-50).forEach(d=>tb.appendChild(row(`<td>${d.no}</td><td>${d.type}</td><td>${d.date}</td><td>${fmt(d.total)}</td><td><button class="btn" onclick="printDoc('${d.no}')">طباعة</button></td>`)));
+}
+function previewTemplate(title, bodyHTML){
+  const host=document.getElementById("printHost");
+  host.innerHTML = `<div class="print active-print"><div class="hdr"><div><h1>${title}</h1><div>تاريخ: ${today()}</div></div><div><strong>SAR</strong></div></div>${bodyHTML}<div class="signs"><div>المستلم</div><div>المحاسب</div><div>المدير</div></div></div>`;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active-print"));
+  document.getElementById("tab-print").classList.add("active-print");
+  window.print();
+}
+function printDoc(no){
+  const d=db.docs.find(x=>x.no===no); if(!d) return alert("غير موجود");
+  const lines = d.lines.map(l=>`<tr><td>${l.sku||l.acc}</td><td>${l.desc||''}</td><td>${l.qty||''}</td><td>${fmt(l.price||0)}</td><td>${fmt(l.net||0)}</td></tr>`).join("");
+  const html = `
+  <div><b>الفرع:</b> ${d.branch||''} — <b>المركز:</b> ${d.cc||''}</div>
+  <table><thead><tr><th>الرمز/الحساب</th><th>الوصف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+  <tbody>${lines}</tbody></table>
+  <div class="right"><div>
+    <div>الإجمالي قبل الضريبة: <b>${fmt(d.base||0)}</b></div>
+    <div>الضريبة: <b>${fmt(d.vat||0)}</b></div>
+    <div>الإجمالي شامل الضريبة: <b>${fmt(d.total||0)}</b></div>
+  </div></div>`;
+  previewTemplate(d.type+" — "+d.no, html);
+}
+
+// ------- Voucher actions -------
+function postSale(date, branch, cc, sku, qty, price, cashOrAR, cur){
+  const item=db.items.find(x=>x.sku===sku); if(!item) throw new Error("صنف غير معروف");
+  const map=glOfCat(item.cat5);
+  const doc="AR-"+Date.now();
+  const base=+(qty*price).toFixed(2); const vat=+(base*db.config.vatRate).toFixed(2); const total=base+vat;
+  const cashAcc="1-01-01-001-001", ar="1-02-01-000-000";
+  // revenue
+  postLine(date,doc, cashOrAR==="نقدي"?cashAcc:ar, total, 0, branch, cc);
+  postLine(date,doc, map.sales, 0, base, branch, cc);
+  postLine(date,doc, "2-02-01-001-000", 0, vat, branch, cc);
+  // COGS
+  const cost=fifoConsume(sku, qty);
+  postLine(date,doc, map.cogs, cost, 0, branch, cc);
+  postLine(date,doc, map.inv, 0, cost, branch, cc);
+  // store doc
+  addDoc({no:doc,type:"فاتورة مبيعات",date,branch,cc,currency:cur,base,vat,total,
+          lines:[{sku,desc:item.name,qty,price,net:base}]});
+  return {doc,cost};
+}
+function doSale(){
+  try{
+    const date=document.getElementById("s-date").value||today();
+    const b=document.getElementById("s-branch").value, c=document.getElementById("s-cc").value;
+    const sku=document.getElementById("s-sku").value, qty=+document.getElementById("s-qty").value, price=+document.getElementById("s-price").value;
+    const cash=document.getElementById("s-cash").value; const cur=document.getElementById("s-cur").value;
+    const res=postSale(date,b,c,sku,qty,price,cash,cur);
+    saveDB(db); refreshJE(); document.getElementById("s-msg").innerHTML=`<span class="ok">تم الترحيل (COGS=${fmt(res.cost)})</span>`;
+  }catch(e){ document.getElementById("s-msg").innerHTML=`<span class="err">${e.message}</span>`; }
+}
+function previewSale(){
+  const s=document.getElementById("s-sku"); if(!s) return;
+  const sku=s.value, qty=+document.getElementById("s-qty").value, price=+document.getElementById("s-price").value;
+  const base=+(qty*price).toFixed(2), vat=+(base*db.config.vatRate).toFixed(2), total=base+vat;
+  const item=db.items.find(x=>x.sku===sku)||{name:""};
+  previewTemplate("فاتورة مبيعات (معاينة)",
+    `<table><thead><tr><th>الرمز</th><th>الوصف</th><th>كمية</th><th>سعر</th><th>إجمالي</th></tr></thead>
+      <tbody><tr><td>${sku}</td><td>${item.name}</td><td>${qty}</td><td>${fmt(price)}</td><td>${fmt(base)}</td></tr></tbody></table>
+      <div class='right'><div>الضريبة: <b>${fmt(vat)}</b> — الإجمالي: <b>${fmt(total)}</b></div></div>`);
+}
+function doPurchase(){
+  const date=document.getElementById("p-date").value||today();
+  const b=document.getElementById("p-branch").value, c=document.getElementById("p-cc").value;
+  const sku=document.getElementById("p-sku").value, qty=+document.getElementById("p-qty").value, price=+document.getElementById("p-price").value;
+  const pay=document.getElementById("p-cash").value; const supplier=document.getElementById("p-supplier").value||"2-01-01-000-000";
+  const item=db.items.find(x=>x.sku===sku); const map=glOfCat(item.cat5);
+  const doc="AP-"+Date.now();
+  const base=+(qty*price).toFixed(2), vat=+(base*db.config.vatRate).toFixed(2), total=base+vat;
+  const bank="1-01-02-001-001";
+  // accounting
+  postLine(date,doc,map.inv, base,0,b,c);
+  postLine(date,doc,"2-03-01-001-000", vat,0,b,c);
+  postLine(date,doc, pay==="نقدي"?bank:supplier, 0,total,b,c);
+  // FIFO
+  fifoAdd(sku, qty, price);
+  // store doc
+  addDoc({no:doc,type:"فاتورة مشتريات",date,branch:b,cc:c,currency:"SAR",base,vat,total,
+          lines:[{sku,desc:item.name,qty,price,net:base}]});
+  saveDB(db); refreshJE(); document.getElementById("p-msg").textContent="تم الترحيل وإضافة دفعة FIFO";
+}
+function previewPurchase(){
+  const sku=document.getElementById("p-sku").value, qty=+document.getElementById("p-qty").value, price=+document.getElementById("p-price").value;
+  const base=+(qty*price).toFixed(2), vat=+(base*db.config.vatRate).toFixed(2), total=base+vat;
+  const item=db.items.find(x=>x.sku===sku)||{name:""};
+  previewTemplate("فاتورة مشتريات (معاينة)",
+    `<table><thead><tr><th>الرمز</th><th>الوصف</th><th>كمية</th><th>سعر</th><th>إجمالي</th></tr></thead>
+      <tbody><tr><td>${sku}</td><td>${item.name}</td><td>${qty}</td><td>${fmt(price)}</td><td>${fmt(base)}</td></tr></tbody></table>
+      <div class='right'><div>الضريبة: <b>${fmt(vat)}</b> — الإجمالي: <b>${fmt(total)}</b></div></div>`);
+}
+function doReceipt(){
+  const date=document.getElementById("r-date").value||today();
+  const frm=document.getElementById("r-from").value||"1-02-01-000-000";
+  const to=document.getElementById("r-to").value; const amt=+document.getElementById("r-amt").value;
+  const doc="RC-"+Date.now();
+  postLine(date,doc,to,amt,0); postLine(date,doc,frm,0,amt);
+  addDoc({no:doc,type:"سند قبض",date,base:amt,vat:0,total:amt,lines:[{acc:to,desc:"تحصيل نقدي/بنكي",net:amt}]});
+  saveDB(db); refreshJE(); document.getElementById("rcp-msg").textContent="تم الترحيل";
+}
+function previewReceipt(){ previewTemplate("سند قبض (معاينة)", `<div>المبلغ: <b>${fmt(+document.getElementById('r-amt').value||0)}</b></div>`); }
+function doPayment(){
+  const date=document.getElementById("py-date").value||today();
+  const frm=document.getElementById("py-from").value; const to=document.getElementById("py-to").value||"2-01-01-000-000";
+  const amt=+document.getElementById("py-amt").value; const doc="PY-"+Date.now();
+  postLine(date,doc,to,amt,0); postLine(date,doc,frm,0,amt);
+  addDoc({no:doc,type:"سند صرف",date,base:amt,vat:0,total:amt,lines:[{acc:to,desc:"صرف نقدي/بنكي",net:amt}]});
+  saveDB(db); refreshJE(); document.getElementById("pay-msg").textContent="تم الترحيل";
+}
+function previewPayment(){ previewTemplate("سند صرف (معاينة)", `<div>المبلغ: <b>${fmt(+document.getElementById('py-amt').value||0)}</b></div>`); }
+function doJournal(){
+  const date=document.getElementById("j-date").value||today();
+  const dr=document.getElementById("j-dr").value; const cr=document.getElementById("j-cr").value; const amt=+document.getElementById("j-amt").value;
+  const doc="JV-"+Date.now();
+  postLine(date,doc,dr,amt,0); postLine(date,doc,cr,0,amt);
+  addDoc({no:doc,type:"قيد يومية",date,base:amt,vat:0,total:amt,lines:[{acc:dr,desc:"",net:amt},{acc:cr,desc:"",net:-amt}]});
+  saveDB(db); refreshJE(); document.getElementById("j-msg").textContent="تم الترحيل";
+}
+function previewJV(){ previewTemplate("قيد يومية (معاينة)", `<div>مبلغ: <b>${fmt(+document.getElementById('j-amt').value||0)}</b></div>`); }
+function doReturnSale(){
+  const sku=document.getElementById("rs-sku").value; const qty=+document.getElementById("rs-qty").value; const price=+document.getElementById("rs-price").value; const cash=document.getElementById("rs-cash").value;
+  const item=db.items.find(x=>x.sku===sku)||{name:"",cat5:"أجهزة صغيرة"}; const map=glOfCat(item.cat5);
+  const doc="CRN-"+Date.now(); const base=+(qty*price).toFixed(2); const vat=+(base*db.config.vatRate).toFixed(2); const total=base+vat;
+  const mrd="4-02-01-000-000"; const cashAcc="1-01-01-001-001"; const ar="1-02-01-000-000";
+  postLine(today(),doc,mrd,base,0); postLine(today(),doc,"2-02-01-001-000",vat,0);
+  if(cash==="نقدي") postLine(today(),doc,cashAcc,0,total); else postLine(today(),doc,ar,0,total);
+  fifoAdd(sku, qty, price);
+  postLine(today(),doc,map.inv,base,0); postLine(today(),doc,map.cogs,0,base);
+  addDoc({no:doc,type:"مرتجع مبيعات",date:today(),base,vat,total,lines:[{sku,desc:item.name,qty,price,net:base}]});
+  saveDB(db); refreshJE(); document.getElementById("rs-msg").textContent="تم الترحيل";
+}
+function previewCRN(){ previewTemplate("مرتجع مبيعات (معاينة)","<div>معاينة مرتجع.</div>"); }
+function doReturnPurchase(){
+  const sku=document.getElementById("rp-sku").value; const qty=+document.getElementById("rp-qty").value; const price=+document.getElementById("rp-price").value; const supplier=document.getElementById("rp-supplier").value||"2-01-01-000-000";
+  const item=db.items.find(x=>x.sku===sku)||{name:"",cat5:"أجهزة صغيرة"}; const map=glOfCat(item.cat5);
+  const doc="DRN-"+Date.now(); const base=+(qty*price).toFixed(2); const vat=+(base*db.config.vatRate).toFixed(2); const total=base+vat;
+  postLine(today(),doc,map.inv,0,base); postLine(today(),doc,"2-03-01-001-000",0,vat); postLine(today(),doc,supplier,base+vat,0);
+  try{ fifoConsume(sku, qty); }catch(e){ /* ignore */ }
+  addDoc({no:doc,type:"مرتجع مشتريات",date:today(),base,vat,total,lines:[{sku,desc:item.name,qty,price,net:base}]});
+  saveDB(db); refreshJE(); document.getElementById("rp-msg").textContent="تم الترحيل";
+}
+function previewDRN(){ previewTemplate("مرتجع مشتريات (معاينة)","<div>معاينة مرتجع.</div>"); }
+
+// ------- Reports -------
+function refreshJE(){
+  const tb=document.querySelector("#tblJE tbody"); if(!tb) return;
+  tb.innerHTML="";
+  db.journal.slice(-100).forEach(j=>tb.appendChild(row(`<td>${j.docDate}</td><td>${j.docNo}</td><td>${j.acc}</td><td>${fmt(j.debit)}</td><td>${fmt(j.credit)}</td><td>${j.branch||''}</td><td>${j.cc||''}</td>`)));
+}
+function reportJournal(){
+  const f=document.getElementById("r1from").value, t=document.getElementById("r1to").value, br=document.getElementById("r1b").value, cc=document.getElementById("r1c").value;
+  const tb=document.querySelector("#repJournal tbody"); tb.innerHTML="";
+  db.journal.filter(j=>(!f||j.docDate>=f)&&(!t||j.docDate<=t)&&(!br||j.branch===br)&&(!cc||j.cc===cc)).forEach(j=>tb.appendChild(row(`<td>${j.docDate}</td><td>${j.docNo}</td><td>${j.acc}</td><td>${fmt(j.debit)}</td><td>${fmt(j.credit)}</td><td>${j.branch||''}</td><td>${j.cc||''}</td>`)));
+}
+function reportLedger(){
+  const acc=document.getElementById("r2acc").value, f=document.getElementById("r2from").value, t=document.getElementById("r2to").value;
+  const tb=document.querySelector("#repLedger tbody"); tb.innerHTML=""; let bal=0;
+  db.journal.filter(j=>j.acc===acc && (!f||j.docDate>=f)&&(!t||j.docDate<=t)).forEach(j=>{ bal+=j.debit-j.credit; tb.appendChild(row(`<td>${j.docDate}</td><td>${j.docNo}</td><td>${fmt(j.debit)}</td><td>${fmt(j.credit)}</td><td>${fmt(bal)}</td>`)); });
+}
+function accumBy(prefix, sign){
+  // sign: +1 for normal debit accounts, -1 for normal credit accounts or we detect by COA
+  let sum=0;
+  db.journal.forEach(j=>{ if(j.acc.startsWith(prefix)){ sum += (sign>0 ? (j.debit-j.credit):(j.credit-j.debit)); } });
+  return sum;
+}
+function findSide(code){ const a=db.coa.find(x=>x.code===code); return a ? a.side : (code.startsWith('1')||code.startsWith('5')||code.startsWith('6')||code.startsWith('7')?'D':'C'); }
+function balanceOf(code){
+  let d=0,c=0;
+  db.journal.forEach(j=>{ if(j.acc===code){ d+=j.debit; c+=j.credit; } });
+  const side=findSide(code);
+  return side==='D' ? (d-c) : (c-d);
+}
+function reportTB(){
+  const tb=document.querySelector("#repTB tbody"); tb.innerHTML="";
+  db.coa.forEach(a=>{ const d=balanceOf(a.code)+(a.side==='D'?0:0); // already signed via balanceOf
+    // we need also show sum of debits/credits for period -> simple totals
+    let sumD=0,sumC=0; db.journal.forEach(j=>{ if(j.acc===a.code){ sumD+=j.debit; sumC+=j.credit; } });
+    tb.appendChild(row(`<td>${a.code}</td><td>${a.name}</td><td>${fmt(sumD)}</td><td>${fmt(sumC)}</td><td>${fmt(d)}</td>`));
+  });
+}
+function reportIS(){
+  // Revenue (4-01-xx) less returns (4-02), COGS (5-), OPEX (6-), Other income/exp (7-)
+  const revenuePrefixes=["4-01-"]; let revenue=0;
+  db.journal.forEach(j=>{ if(revenuePrefixes.some(p=>j.acc.startsWith(p))) revenue += (j.credit - j.debit); });
+  let returns=0; db.journal.forEach(j=>{ if(j.acc.startsWith("4-02-")) returns += (j.debit - j.credit); });
+  let cogs=0; db.journal.forEach(j=>{ if(j.acc.startsWith("5-")) cogs += (j.debit - j.credit); });
+  let opex=0; db.journal.forEach(j=>{ if(j.acc.startsWith("6-")) opex += (j.debit - j.credit); });
+  let otherInc=0; db.journal.forEach(j=>{ if(j.acc.startsWith("7-01-")) otherInc += (j.credit - j.debit); });
+  let otherExp=0; db.journal.forEach(j=>{ if(j.acc.startsWith("7-02-")) otherExp += (j.debit - j.credit); });
+  const net = (revenue - returns) - cogs - opex + otherInc - otherExp;
+  const tb=document.querySelector("#repIS tbody"); tb.innerHTML="";
+  const add=(k,v)=>tb.appendChild(row(`<td>${k}</td><td>${fmt(v)}</td>`));
+  add("إيرادات المبيعات",revenue); add("مردودات/خصومات",returns); add("صافي الإيراد",revenue-returns);
+  add("تكلفة المبيعات",cogs); add("مجمل الربح", (revenue-returns)-cogs);
+  add("مصاريف تشغيلية",opex); add("دخل تشغيلي", (revenue-returns)-cogs-opex);
+  add("إيرادات أخرى",otherInc); add("مصاريف أخرى",otherExp);
+  add("صافي الربح/(الخسارة)",net);
+}
+function reportBS(){
+  // Assets: codes starting '1-'
+  let assets=0, liabilities=0, equity=0;
+  db.coa.forEach(a=>{
+    const bal=balanceOf(a.code);
+    if(a.code.startsWith("1-")) assets += bal;
+    else if(a.code.startsWith("2-")) liabilities += bal;
+    else if(a.code.startsWith("3-")) equity += bal;
+  });
+  // Retained earnings: approximate via P&L net (from IS)
+  // Compute net quickly again:
+  let revenue=0, returns=0, cogs=0, opex=0, otherInc=0, otherExp=0;
+  db.journal.forEach(j=>{
+    if(j.acc.startsWith("4-01-")) revenue += (j.credit - j.debit);
+    if(j.acc.startsWith("4-02-")) returns += (j.debit - j.credit);
+    if(j.acc.startsWith("5-")) cogs += (j.debit - j.credit);
+    if(j.acc.startsWith("6-")) opex += (j.debit - j.credit);
+    if(j.acc.startsWith("7-01-")) otherInc += (j.credit - j.debit);
+    if(j.acc.startsWith("7-02-")) otherExp += (j.debit - j.credit);
+  });
+  const net = (revenue - returns) - cogs - opex + otherInc - otherExp;
+  const equityTotal = equity + net;
+  const tb=document.querySelector("#repBS tbody"); tb.innerHTML="";
+  const add=(k,v)=>tb.appendChild(row(`<td>${k}</td><td>${fmt(v)}</td>`));
+  add("الأصول", assets); add("الخصوم", liabilities); add("حقوق الملكية (بما فيها صافي الربح)", equityTotal);
+  const check = Math.abs(assets - (liabilities + equityTotal)) < 0.01 ? "✔ المعادلة متوازنة" : "⚠ تحقق من الأرصدة/الفترات";
+  document.getElementById("bs-check").textContent = check + ` — فرق = ${fmt(assets - (liabilities + equityTotal))}`;
+}
+
+// Backup
+function exportAll(){ const blob=new Blob([JSON.stringify(db)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="accounting_backup.json"; a.click(); }
+function importAll(e){ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ db=JSON.parse(r.result); saveDB(db); refreshMasters(); alert("تم الاستيراد."); }catch(_){ alert("ملف غير صالح"); } }; r.readAsText(f); }
+function wipeAll(){ if(confirm("سيتم حذف البيانات. متابعة؟")){ localStorage.removeItem(DBKEY); db=loadDB(); refreshMasters(); } }
+</script>
+</body>
+</html>
