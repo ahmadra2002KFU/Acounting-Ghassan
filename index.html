@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<title>النظام المحاسبي — نسخة مع قاعدة بيانات</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+  :root{--bg:#0b1220;--card:#0f172a;--ink:#e5e7eb;--muted:#93a1b1;--line:#233046;--acc:#22d3ee;--acc2:#a78bfa;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Tajawal, Segoe UI, Tahoma, Arial, sans-serif;background:var(--bg);color:var(--ink)}
+  header{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:18px}
+  .tag{padding:6px 10px;border-radius:999px;background:linear-gradient(90deg,var(--acc),var(--acc2));color:#0b1220;font-weight:700}
+  nav{margin-inline-start:auto;display:flex;gap:6px;flex-wrap:wrap}
+  nav button{background:#0b1628;border:1px solid var(--line);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer}
+  nav button.active{outline:2px solid var(--acc)}
+  .wrap{padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+  .col-2{grid-column:span 2}.col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-6{grid-column:span 6}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
+  h2{font-size:16px;margin:4px 0 10px} h3{margin:0 0 6px}
+  label{font-size:12px;color:#cbd5e1}
+  input,select{background:#071225;border:1px solid #1e2a42;color:var(--ink);padding:8px;border-radius:8px;width:100%}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+  th,td{border-bottom:1px solid var(--line);padding:8px;text-align:right}
+  th{background:#0a1a31;color:#c7d2fe;position:sticky;top:0}
+  .actions{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{background:#0b1628;border:1px solid var(--line);color:#fff;padding:8px 12px;border-radius:10px;cursor:pointer}
+  .btn.primary{background:linear-gradient(90deg,var(--acc),var(--acc2));color:#0b1220;font-weight:700;border:none}
+  .muted{color:var(--muted);font-size:12px}
+  .sticky{position:sticky;bottom:0;background:#0a1324;border-top:1px solid var(--line);padding:8px}
+  .pill{padding:2px 8px;border-radius:999px;background:#0a1324;border:1px solid var(--line);font-size:12px;display:inline-block}
+  .ok{color:#34d399}.err{color:#f87171}
+  .right{display:flex;justify-content:flex-end}
+  .print{max-width:900px;margin:0 auto;background:white;color:#111;padding:18px;border-radius:12px}
+  .print h1,.print h2{color:#111}
+  .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #ddd;padding-bottom:8px;margin-bottom:8px}
+  .signs{display:flex;gap:18px;justify-content:flex-end;margin-top:24px}
+  @media print {
+    body{background:white;color:#111}
+    header, .wrap > section:not(.active-print){display:none!important}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>النظام المحاسبي — مع قاعدة بيانات</h1>
+  <span class="tag">FIFO · SAR · VAT 15% · Backend API</span>
+  <nav>
+    <button class="tabBtn active" data-tab="tab-dashboard">لوحة التحكم</button>
+    <button class="tabBtn" data-tab="tab-masters">القواميس</button>
+    <button class="tabBtn" data-tab="tab-vouchers">المستندات</button>
+    <button class="tabBtn" data-tab="tab-reports">التقارير</button>
+    <button class="tabBtn" data-tab="tab-print">نماذج الطباعة</button>
+    <button class="tabBtn" data-tab="tab-settings">الإعدادات</button>
+  </nav>
+</header>
+
+<div class="wrap">
+  <section id="tab-dashboard" class="tab card">
+    <h2>نظرة عامة</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="row">
+          <div class="col-3"><div class="pill">العملة الوظيفية</div><h3 id="k-func">—</h3></div>
+          <div class="col-3"><div class="pill">VAT</div><h3 id="k-vat">—</h3></div>
+          <div class="col-3"><div class="pill">عدد الفروع</div><h3 id="k-branches">—</h3></div>
+          <div class="col-3"><div class="pill">مراكز التكلفة</div><h3 id="k-cc">—</h3></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="pill">إرشاد</div>
+        <p class="muted">النظام الآن متصل بقاعدة بيانات SQLite عبر Flask API. جميع البيانات محفوظة في الخادم.</p>
+        <div class="actions">
+          <button class="btn" onclick="exportAll()">تصدير نسخة احتياطية</button>
+          <label class="btn">استيراد <input type="file" accept=".json" style="display:none" onchange="importAll(event)"></label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-masters" class="tab card" style="display:none">
+    <h2>القواميس</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>الفروع</h3>
+        <table id="tblBranches"><thead><tr><th>ID</th><th>الفرع</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>مراكز التكلفة</h3>
+        <table id="tblCC"><thead><tr><th>ID</th><th>المركز</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>العملات</h3>
+        <table id="tblCur"><thead><tr><th>الكود</th><th>الاسم</th><th>وظيفية</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>الأصناف</h3>
+        <table id="tblItems"><thead><tr><th>SKU</th><th>الاسم</th><th>الفئة</th><th>الوحدة</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>قائمة الأسعار</h3>
+        <table id="tblPrice"><thead><tr><th>SKU</th><th>السعر الافتراضي (بدون VAT)</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>الربط المحاسبي للأصناف (GL Mapping)</h3>
+        <table id="tblItemMap"><thead><tr><th>فئة</th><th>حساب مخزون</th><th>حساب مبيعات</th><th>حساب تكلفة</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>شجرة الحسابات (موسعة)</h3>
+        <table id="tblCOA"><thead><tr><th>الكود</th><th>الاسم</th><th>طبيعة</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>أكواد ضريبة القيمة المضافة</h3>
+        <table id="tblTax"><thead><tr><th>الكود</th><th>النوع</th><th>النسبة</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-vouchers" class="tab" style="display:none">
+    <div class="card">
+      <h2>المستندات</h2>
+      <div class="actions">
+        <button class="btn primary" onclick="uiShow('sale')">فاتورة مبيعات</button>
+        <button class="btn" onclick="uiShow('purchase')">فاتورة مشتريات</button>
+        <button class="btn" onclick="uiShow('receipt')">سند قبض</button>
+        <button class="btn" onclick="uiShow('payment')">سند صرف</button>
+        <button class="btn" onclick="uiShow('journal')">قيد يومية</button>
+        <button class="btn" onclick="uiShow('returnSale')">مرتجع مبيعات</button>
+        <button class="btn" onclick="uiShow('returnPurchase')">مرتجع مشتريات</button>
+      </div>
+    </div>
+    <div id="voucher-forms" class="grid"></div>
+
+    <div class="card">
+      <h3>آخر المستندات</h3>
+      <table id="tblDocs"><thead><tr><th>رقم</th><th>النوع</th><th>التاريخ</th><th>الإجمالي</th><th>طباعة</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="card">
+      <h3>ملخص القيود المُرحّلة (آخر 100)</h3>
+      <table id="tblJE"><thead><tr><th>تاريخ</th><th>المستند</th><th>الحساب</th><th>مدين</th><th>دائن</th><th>فرع</th><th>مركز</th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+
+  <section id="tab-reports" class="tab card" style="display:none">
+    <h2>التقارير</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>دفتر اليومية</h3>
+        <div class="row">
+          <div class="col-3"><label>من</label><input id="r1from" type="date"></div>
+          <div class="col-3"><label>إلى</label><input id="r1to" type="date"></div>
+          <div class="col-3"><label>فرع</label><select id="r1b"></select></div>
+          <div class="col-3"><label>مركز</label><select id="r1c"></select></div>
+        </div>
+        <div class="actions"><button class="btn" onclick="reportJournal()">عرض</button></div>
+        <table id="repJournal"><thead><tr><th>تاريخ</th><th>مستند</th><th>الحساب</th><th>مدين</th><th>دائن</th><th>فرع</th><th>مركز</th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <div class="card">
+        <h3>دفتر الأستاذ</h3>
+        <div class="row">
+          <div class="col-6"><label>الحساب</label><input id="r2acc" placeholder="مثال: 1-01-01-001-001"></div>
+          <div class="col-3"><label>من</label><input id="r2from" type="date"></div>
+          <div class="col-3"><label>إلى</label><input id="r2to" type="date"></div>
+        </div>
+        <div class="actions"><button class="btn" onclick="reportLedger()">عرض</button></div>
+        <table id="repLedger"><thead><tr><th>تاريخ</th><th>مستند</th><th>مدين</th><th>دائن</th><th>رصيد</th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <div class="card">
+        <h3>ميزان المراجعة</h3>
+        <div class="actions"><button class="btn" onclick="reportTB()">تحديث</button></div>
+        <table id="repTB"><thead><tr><th>الحساب</th><th>الاسم</th><th>مدين</th><th>دائن</th><th>الرصيد</th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <div class="card">
+        <h3>قائمة الدخل</h3>
+        <div class="actions"><button class="btn" onclick="reportIS()">تحديث</button></div>
+        <table id="repIS"><thead><tr><th>البند</th><th>القيمة</th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <div class="card">
+        <h3>قائمة المركز المالي</h3>
+        <div class="actions"><button class="btn" onclick="reportBS()">تحديث</button></div>
+        <table id="repBS"><thead><tr><th>البند</th><th>القيمة</th></tr></thead><tbody></tbody></table>
+        <div id="bs-check" class="muted"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-print" class="tab card" style="display:none">
+    <h2>نماذج الطباعة</h2>
+    <div class="muted">اختر مستندًا من الجدول في تبويب <b>المستندات</b> واضغط "طباعة".</div>
+    <div id="printHost"></div>
+  </section>
+
+  <section id="tab-settings" class="tab card" style="display:none">
+    <h2>الإعدادات والنسخ الاحتياطي</h2>
+    <div class="actions">
+      <button class="btn" onclick="exportAll()">تصدير كامل</button>
+      <label class="btn">استيراد<input type="file" accept=".json" style="display:none" onchange="importAll(event)"></label>
+      <button class="btn" onclick="wipeAll()">إعادة تعيين</button>
+    </div>
+  </section>
+</div>
+
+<script>
+const API_BASE = 'http://localhost:5000/api';
+const today=()=>new Date().toISOString().slice(0,10);
+const fmt=n=>(n||0).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+// Global data cache
+let db = {
+  config: {},
+  branches: [],
+  costCenters: [],
+  currencies: [],
+  items: [],
+  prices: {},
+  itemMap: {},
+  coa: [],
+  taxes: [],
+  journal: [],
+  docs: []
+};
+
+// API helper
+async function api(endpoint, method = 'GET', body = null) {
+  const options = {
+    method,
+    headers: { 'Content-Type': 'application/json' }
+  };
+  if (body) options.body = JSON.stringify(body);
+
+  const response = await fetch(`${API_BASE}${endpoint}`, options);
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'API Error');
+  }
+  return response.json();
+}
+
+// Load all master data
+async function loadAllData() {
+  try {
+    const [config, branches, costCenters, currencies, items, prices, itemMap, coa, taxes] = await Promise.all([
+      api('/config'),
+      api('/branches'),
+      api('/cost-centers'),
+      api('/currencies'),
+      api('/items'),
+      api('/prices'),
+      api('/item-mapping'),
+      api('/coa'),
+      api('/tax-codes')
+    ]);
+
+    db.config = config;
+    db.branches = branches;
+    db.costCenters = costCenters;
+    db.currencies = currencies;
+    db.items = items;
+    db.prices = prices;
+    db.itemMap = itemMap;
+    db.coa = coa;
+    db.taxes = taxes;
+
+    refreshMasters();
+  } catch (error) {
+    alert('خطأ في تحميل البيانات: ' + error.message);
+  }
+}
+
+// UI navigation
+document.querySelectorAll(".tabBtn").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tabBtn").forEach(x=>x.classList.remove("active")); b.classList.add("active");
+  document.querySelectorAll(".tab").forEach(t=>t.style.display="none");
+  document.getElementById(b.dataset.tab).style.display="";
+});
+
+function row(html){const tr=document.createElement('tr'); tr.innerHTML=html; return tr;}
+
+function refreshMasters(){
+  document.getElementById("k-func").textContent=db.config.functionalCurrency;
+  document.getElementById("k-vat").textContent=(db.config.vatRate*100).toFixed(0)+"%";
+  document.getElementById("k-branches").textContent=db.branches.length;
+  document.getElementById("k-cc").textContent=db.costCenters.length;
+
+  const b=document.querySelector("#tblBranches tbody"); b.innerHTML=""; db.branches.forEach(x=>b.appendChild(row(`<td>${x.id}</td><td>${x.name}</td>`)));
+  const c=document.querySelector("#tblCC tbody"); c.innerHTML=""; db.costCenters.forEach(x=>c.appendChild(row(`<td>${x.id}</td><td>${x.name}</td>`)));
+  const cu=document.querySelector("#tblCur tbody"); cu.innerHTML=""; db.currencies.forEach(x=>cu.appendChild(row(`<td>${x.code}</td><td>${x.name}</td><td>${x.functional?'نعم':'لا'}</td>`)));
+  const it=document.querySelector("#tblItems tbody"); it.innerHTML=""; db.items.forEach(x=>it.appendChild(row(`<td>${x.sku}</td><td>${x.name}</td><td>${x.cat4} / ${x.cat5}</td><td>${x.uom}</td>`)));
+  const pl=document.querySelector("#tblPrice tbody"); pl.innerHTML=""; db.items.forEach(x=>pl.appendChild(row(`<td>${x.sku}</td><td>${fmt(db.prices[x.sku]||0)}</td>`)));
+  const mp=document.querySelector("#tblItemMap tbody"); mp.innerHTML=""; Object.entries(db.itemMap).forEach(([k,v])=>mp.appendChild(row(`<td>${k}</td><td>${v.inv}</td><td>${v.sales}</td><td>${v.cogs}</td>`)));
+  const ca=document.querySelector("#tblCOA tbody"); ca.innerHTML=""; db.coa.forEach(a=>ca.appendChild(row(`<td>${a.code}</td><td>${a.name}</td><td>${a.side==='D'?'مدين':'دائن'}</td>`)));
+  const tx=document.querySelector("#tblTax tbody"); tx.innerHTML=""; db.taxes.forEach(t=>tx.appendChild(row(`<td>${t.code}</td><td>${t.type}</td><td>${(t.rate*100).toFixed(0)}%</td>`)));
+
+  const r1b=document.getElementById("r1b"); r1b.innerHTML="<option value=''>الكل</option>"+db.branches.map(x=>`<option>${x.name}</option>`).join("");
+  const r1c=document.getElementById("r1c"); r1c.innerHTML="<option value=''>الكل</option>"+db.costCenters.map(x=>`<option>${x.name}</option>`).join("");
+
+  refreshJE(); refreshDocsTable();
+}
+
+async function refreshJE(){
+  try {
+    db.journal = await api('/journal?limit=100');
+    const tb=document.querySelector("#tblJE tbody");
+    if(tb) {
+      tb.innerHTML="";
+      db.journal.forEach(j=>tb.appendChild(row(`<td>${j.docDate}</td><td>${j.docNo}</td><td>${j.acc}</td><td>${fmt(j.debit)}</td><td>${fmt(j.credit)}</td><td>${j.branch||''}</td><td>${j.cc||''}</td>`)));
+    }
+  } catch (error) {
+    console.error('Error loading journal:', error);
+  }
+}
+
+async function refreshDocsTable(){
+  try {
+    db.docs = await api('/documents?limit=50');
+    const tb=document.querySelector("#tblDocs tbody");
+    if(tb) {
+      tb.innerHTML="";
+      db.docs.forEach(d=>tb.appendChild(row(`<td>${d.no}</td><td>${d.type}</td><td>${d.date}</td><td>${fmt(d.total)}</td><td><button class="btn" onclick="printDoc('${d.no}')">طباعة</button></td>`)));
+    }
+  } catch (error) {
+    console.error('Error loading documents:', error);
+  }
+}
+
+const forms={
+  sale:() => `
+  <div class="card"><h3>فاتورة مبيعات</h3>
+    <div class="row">
+      <div class="col-3"><label>التاريخ</label><input id="s-date" type="date" value="${today()}"></div>
+      <div class="col-3"><label>الفرع</label><select id="s-branch">${db.branches.map(x=>`<option>${x.name}</option>`)}</select></div>
+      <div class="col-3"><label>المركز</label><select id="s-cc">${db.costCenters.map(x=>`<option>${x.name}</option>`)}</select></div>
+      <div class="col-3"><label>التحصيل</label><select id="s-cash"><option>نقدي</option><option>آجل</option></select></div>
+    </div>
+    <div class="row">
+      <div class="col-6"><label>الصنف</label><select id="s-sku" onchange="autoPrice()">${db.items.map(x=>`<option value="${x.sku}">${x.sku} — ${x.name}</option>`)}</select></div>
+      <div class="col-2"><label>كمية</label><input id="s-qty" type="number" value="1"></div>
+      <div class="col-2"><label>سعر الوحدة (بدون VAT)</label><input id="s-price" type="number" step="0.01"></div>
+      <div class="col-2"><label>العملة</label><select id="s-cur">${db.currencies.map(x=>`<option ${x.functional?'selected':''}>${x.code}</option>`)}</select></div>
+    </div>
+    <div class="actions sticky">
+      <button class="btn primary" onclick="doSale()">ترحيل</button>
+      <button class="btn" onclick="previewSale()">معاينة الطباعة</button>
+      <span id="s-msg" class="muted"></span>
+    </div>
+  </div>`,
+  purchase:() => `
+  <div class="card"><h3>فاتورة مشتريات</h3>
+    <div class="row">
+      <div class="col-3"><label>التاريخ</label><input id="p-date" type="date" value="${today()}"></div>
+      <div class="col-3"><label>الفرع</label><select id="p-branch">${db.branches.map(x=>`<option>${x.name}</option>`)}</select></div>
+      <div class="col-3"><label>المركز</label><select id="p-cc">${db.costCenters.map(x=>`<option>${x.name}</option>`)}</select></div>
+      <div class="col-3"><label>الدفع</label><select id="p-cash"><option>آجل</option><option>نقدي</option></select></div>
+    </div>
+    <div class="row">
+      <div class="col-4"><label>الصنف</label><select id="p-sku">${db.items.map(x=>`<option value="${x.sku}">${x.sku} — ${x.name}</option>`)}</select></div>
+      <div class="col-2"><label>كمية</label><input id="p-qty" type="number" value="1"></div>
+      <div class="col-3"><label>سعر الوحدة (بدون VAT)</label><input id="p-price" type="number" value="1000"></div>
+      <div class="col-3"><label>حساب المورد</label><input id="p-supplier" placeholder="2-01-01-001-001"></div>
+    </div>
+    <div class="actions sticky">
+      <button class="btn primary" onclick="doPurchase()">ترحيل</button>
+      <button class="btn" onclick="previewPurchase()">معاينة الطباعة</button>
+      <span id="p-msg" class="muted"></span>
+    </div>
+  </div>`,
+  receipt:() => `
+  <div class="card"><h3>سند قبض</h3>
+    <div class="row">
+      <div class="col-3"><label>التاريخ</label><input id="r-date" type="date" value="${today()}"></div>
+      <div class="col-3"><label>من حساب</label><input id="r-from" placeholder="عميل/إيراد"></div>
+      <div class="col-3"><label>إلى</label><select id="r-to"><option>1-01-01-001-001</option><option>1-01-02-001-001</option></select></div>
+      <div class="col-3"><label>المبلغ</label><input id="r-amt" type="number"></div>
+    </div>
+    <div class="actions sticky"><button class="btn primary" onclick="doReceipt()">ترحيل</button><button class="btn" onclick="previewReceipt()">معاينة</button><span id="rcp-msg" class="muted"></span></div>
+  </div>`,
+  payment:() => `
+  <div class="card"><h3>سند صرف</h3>
+    <div class="row">
+      <div class="col-3"><label>التاريخ</label><input id="py-date" type="date" value="${today()}"></div>
+      <div class="col-3"><label>من</label><select id="py-from"><option>1-01-01-001-001</option><option>1-01-02-001-001</option></select></div>
+      <div class="col-3"><label>إلى حساب</label><input id="py-to" placeholder="مورد/مصروف"></div>
+      <div class="col-3"><label>المبلغ</label><input id="py-amt" type="number"></div>
+    </div>
+    <div class="actions sticky"><button class="btn primary" onclick="doPayment()">ترحيل</button><button class="btn" onclick="previewPayment()">معاينة</button><span id="pay-msg" class="muted"></span></div>
+  </div>`,
+  journal:() => `
+  <div class="card"><h3>قيد يومية</h3>
+    <div class="row">
+      <div class="col-3"><label>التاريخ</label><input id="j-date" type="date" value="${today()}"></div>
+      <div class="col-3"><label>مدين</label><input id="j-dr" placeholder="1-..."></div>
+      <div class="col-3"><label>دائن</label><input id="j-cr" placeholder="2-..."></div>
+      <div class="col-3"><label>المبلغ</label><input id="j-amt" type="number"></div>
+    </div>
+    <div class="actions sticky"><button class="btn primary" onclick="doJournal()">ترحيل</button><button class="btn" onclick="previewJV()">معاينة</button><span id="j-msg" class="muted"></span></div>
+  </div>`,
+  returnSale:() => `
+  <div class="card"><h3>مرتجع مبيعات</h3>
+    <div class="row">
+      <div class="col-4"><label>SKU</label><input id="rs-sku"></div>
+      <div class="col-2"><label>كمية</label><input id="rs-qty" type="number" value="1"></div>
+      <div class="col-3"><label>سعر البيع (بدون VAT)</label><input id="rs-price" type="number" value="1000"></div>
+      <div class="col-3"><label>طريقة الرد</label><select id="rs-cash"><option>نقدي</option><option>ذمم عميل</option></select></div>
+    </div>
+    <div class="actions sticky"><button class="btn primary" onclick="doReturnSale()">ترحيل</button><button class="btn" onclick="previewCRN()">معاينة</button><span id="rs-msg" class="muted"></span></div>
+  </div>`,
+  returnPurchase:() => `
+  <div class="card"><h3>مرتجع مشتريات</h3>
+    <div class="row">
+      <div class="col-4"><label>SKU</label><input id="rp-sku"></div>
+      <div class="col-2"><label>كمية</label><input id="rp-qty" type="number" value="1"></div>
+      <div class="col-3"><label>سعر الشراء (بدون VAT)</label><input id="rp-price" type="number" value="1000"></div>
+      <div class="col-3"><label>حساب المورد</label><input id="rp-supplier" placeholder="2-01-..."></div>
+    </div>
+    <div class="actions sticky"><button class="btn primary" onclick="doReturnPurchase()">ترحيل</button><button class="btn" onclick="previewDRN()">معاينة</button><span id="rp-msg" class="muted"></span></div>
+  </div>`
+};
+
+function uiShow(kind){ document.getElementById("voucher-forms").innerHTML=forms[kind](); autoPrice(); }
+
+function autoPrice(){
+  const s=document.getElementById("s-sku"); if(!s) return;
+  const sku=s.value; const p=db.prices[sku]||0; const f=document.getElementById("s-price"); if(f) f.value=p;
+}
+
+function previewTemplate(title, bodyHTML){
+  const host=document.getElementById("printHost");
+  host.innerHTML = `<div class="print active-print"><div class="hdr"><div><h1>${title}</h1><div>تاريخ: ${today()}</div></div><div><strong>SAR</strong></div></div>${bodyHTML}<div class="signs"><div>المستلم</div><div>المحاسب</div><div>المدير</div></div></div>`;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active-print"));
+  document.getElementById("tab-print").classList.add("active-print");
+  window.print();
+}
+
+function printDoc(no){
+  const d=db.docs.find(x=>x.no===no); if(!d) return alert("غير موجود");
+  const lines = d.lines.map(l=>`<tr><td>${l.sku||l.acc}</td><td>${l.desc||''}</td><td>${l.qty||''}</td><td>${fmt(l.price||0)}</td><td>${fmt(l.net||0)}</td></tr>`).join("");
+  const html = `
+  <div><b>الفرع:</b> ${d.branch||''} — <b>المركز:</b> ${d.cc||''}</div>
+  <table><thead><tr><th>الرمز/الحساب</th><th>الوصف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+  <tbody>${lines}</tbody></table>
+  <div class="right"><div>
+    <div>الإجمالي قبل الضريبة: <b>${fmt(d.base||0)}</b></div>
+    <div>الضريبة: <b>${fmt(d.vat||0)}</b></div>
+    <div>الإجمالي شامل الضريبة: <b>${fmt(d.total||0)}</b></div>
+  </div></div>`;
+  previewTemplate(d.type+" — "+d.no, html);
+}
+
+// Voucher posting functions
+async function doSale(){
+  try{
+    const data = {
+      date: document.getElementById("s-date").value || today(),
+      branch: document.getElementById("s-branch").value,
+      cc: document.getElementById("s-cc").value,
+      sku: document.getElementById("s-sku").value,
+      qty: +document.getElementById("s-qty").value,
+      price: +document.getElementById("s-price").value,
+      cashOrAR: document.getElementById("s-cash").value,
+      currency: document.getElementById("s-cur").value
+    };
+
+    const result = await api('/vouchers/sale', 'POST', data);
+    await refreshJE();
+    await refreshDocsTable();
+    document.getElementById("s-msg").innerHTML=`<span class="ok">${result.message}</span>`;
+  }catch(e){
+    document.getElementById("s-msg").innerHTML=`<span class="err">${e.message}</span>`;
+  }
+}
+
+function previewSale(){
+  const s=document.getElementById("s-sku"); if(!s) return;
+  const sku=s.value, qty=+document.getElementById("s-qty").value, price=+document.getElementById("s-price").value;
+  const base=+(qty*price).toFixed(2), vat=+(base*db.config.vatRate).toFixed(2), total=base+vat;
+  const item=db.items.find(x=>x.sku===sku)||{name:""};
+  previewTemplate("فاتورة مبيعات (معاينة)",
+    `<table><thead><tr><th>الرمز</th><th>الوصف</th><th>كمية</th><th>سعر</th><th>إجمالي</th></tr></thead>
+      <tbody><tr><td>${sku}</td><td>${item.name}</td><td>${qty}</td><td>${fmt(price)}</td><td>${fmt(base)}</td></tr></tbody></table>
+      <div class='right'><div>الضريبة: <b>${fmt(vat)}</b> — الإجمالي: <b>${fmt(total)}</b></div></div>`);
+}
+
+async function doPurchase(){
+  try{
+    const data = {
+      date: document.getElementById("p-date").value || today(),
+      branch: document.getElementById("p-branch").value,
+      cc: document.getElementById("p-cc").value,
+      sku: document.getElementById("p-sku").value,
+      qty: +document.getElementById("p-qty").value,
+      price: +document.getElementById("p-price").value,
+      paymentType: document.getElementById("p-cash").value,
+      supplierAcc: document.getElementById("p-supplier").value
+    };
+
+    const result = await api('/vouchers/purchase', 'POST', data);
+    await refreshJE();
+    await refreshDocsTable();
+    document.getElementById("p-msg").textContent=result.message;
+  }catch(e){
+    document.getElementById("p-msg").innerHTML=`<span class="err">${e.message}</span>`;
+  }
+}
+
+function previewPurchase(){
+  const sku=document.getElementById("p-sku").value, qty=+document.getElementById("p-qty").value, price=+document.getElementById("p-price").value;
+  const base=+(qty*price).toFixed(2), vat=+(base*db.config.vatRate).toFixed(2), total=base+vat;
+  const item=db.items.find(x=>x.sku===sku)||{name:""};
+  previewTemplate("فاتورة مشتريات (معاينة)",
+    `<table><thead><tr><th>الرمز</th><th>الوصف</th><th>كمية</th><th>سعر</th><th>إجمالي</th></tr></thead>
+      <tbody><tr><td>${sku}</td><td>${item.name}</td><td>${qty}</td><td>${fmt(price)}</td><td>${fmt(base)}</td></tr></tbody></table>
+      <div class='right'><div>الضريبة: <b>${fmt(vat)}</b> — الإجمالي: <b>${fmt(total)}</b></div></div>`);
+}
+
+async function doReceipt(){
+  try{
+    const data = {
+      date: document.getElementById("r-date").value || today(),
+      fromAcc: document.getElementById("r-from").value || "1-02-01-000-000",
+      toAcc: document.getElementById("r-to").value,
+      amount: +document.getElementById("r-amt").value
+    };
+
+    const result = await api('/vouchers/receipt', 'POST', data);
+    await refreshJE();
+    await refreshDocsTable();
+    document.getElementById("rcp-msg").textContent=result.message;
+  }catch(e){
+    document.getElementById("rcp-msg").innerHTML=`<span class="err">${e.message}</span>`;
+  }
+}
+
+function previewReceipt(){ previewTemplate("سند قبض (معاينة)", `<div>المبلغ: <b>${fmt(+document.getElementById('r-amt').value||0)}</b></div>`); }
+
+async function doPayment(){
+  try{
+    const data = {
+      date: document.getElementById("py-date").value || today(),
+      fromAcc: document.getElementById("py-from").value,
+      toAcc: document.getElementById("py-to").value || "2-01-01-000-000",
+      amount: +document.getElementById("py-amt").value
+    };
+
+    const result = await api('/vouchers/payment', 'POST', data);
+    await refreshJE();
+    await refreshDocsTable();
+    document.getElementById("pay-msg").textContent=result.message;
+  }catch(e){
+    document.getElementById("pay-msg").innerHTML=`<span class="err">${e.message}</span>`;
+  }
+}
+
+function previewPayment(){ previewTemplate("سند صرف (معاينة)", `<div>المبلغ: <b>${fmt(+document.getElementById('py-amt').value||0)}</b></div>`); }
+
+async function doJournal(){
+  try{
+    const data = {
+      date: document.getElementById("j-date").value || today(),
+      debitAcc: document.getElementById("j-dr").value,
+      creditAcc: document.getElementById("j-cr").value,
+      amount: +document.getElementById("j-amt").value
+    };
+
+    const result = await api('/vouchers/journal', 'POST', data);
+    await refreshJE();
+    await refreshDocsTable();
+    document.getElementById("j-msg").textContent=result.message;
+  }catch(e){
+    document.getElementById("j-msg").innerHTML=`<span class="err">${e.message}</span>`;
+  }
+}
+
+function previewJV(){ previewTemplate("قيد يومية (معاينة)", `<div>مبلغ: <b>${fmt(+document.getElementById('j-amt').value||0)}</b></div>`); }
+
+async function doReturnSale(){
+  try{
+    const data = {
+      date: today(),
+      sku: document.getElementById("rs-sku").value,
+      qty: +document.getElementById("rs-qty").value,
+      price: +document.getElementById("rs-price").value,
+      refundType: document.getElementById("rs-cash").value
+    };
+
+    const result = await api('/vouchers/return-sale', 'POST', data);
+    await refreshJE();
+    await refreshDocsTable();
+    document.getElementById("rs-msg").textContent=result.message;
+  }catch(e){
+    document.getElementById("rs-msg").innerHTML=`<span class="err">${e.message}</span>`;
+  }
+}
+
+function previewCRN(){ previewTemplate("مرتجع مبيعات (معاينة)","<div>معاينة مرتجع.</div>"); }
+
+async function doReturnPurchase(){
+  try{
+    const data = {
+      date: today(),
+      sku: document.getElementById("rp-sku").value,
+      qty: +document.getElementById("rp-qty").value,
+      price: +document.getElementById("rp-price").value,
+      supplierAcc: document.getElementById("rp-supplier").value
+    };
+
+    const result = await api('/vouchers/return-purchase', 'POST', data);
+    await refreshJE();
+    await refreshDocsTable();
+    document.getElementById("rp-msg").textContent=result.message;
+  }catch(e){
+    document.getElementById("rp-msg").innerHTML=`<span class="err">${e.message}</span>`;
+  }
+}
+
+function previewDRN(){ previewTemplate("مرتجع مشتريات (معاينة)","<div>معاينة مرتجع.</div>"); }
+
+// Reports
+async function reportJournal(){
+  try {
+    const params = new URLSearchParams();
+    const from = document.getElementById("r1from").value;
+    const to = document.getElementById("r1to").value;
+    const branch = document.getElementById("r1b").value;
+    const cc = document.getElementById("r1c").value;
+
+    if(from) params.append('from', from);
+    if(to) params.append('to', to);
+    if(branch) params.append('branch', branch);
+    if(cc) params.append('cc', cc);
+
+    const journal = await api('/reports/journal?' + params.toString());
+    const tb=document.querySelector("#repJournal tbody");
+    tb.innerHTML="";
+    journal.forEach(j=>tb.appendChild(row(`<td>${j.docDate}</td><td>${j.docNo}</td><td>${j.acc}</td><td>${fmt(j.debit)}</td><td>${fmt(j.credit)}</td><td>${j.branch||''}</td><td>${j.cc||''}</td>`)));
+  } catch(e) {
+    alert('خطأ: ' + e.message);
+  }
+}
+
+async function reportLedger(){
+  try {
+    const account = document.getElementById("r2acc").value;
+    const from = document.getElementById("r2from").value;
+    const to = document.getElementById("r2to").value;
+
+    const params = new URLSearchParams({ account });
+    if(from) params.append('from', from);
+    if(to) params.append('to', to);
+
+    const ledger = await api('/reports/ledger?' + params.toString());
+    const tb=document.querySelector("#repLedger tbody");
+    tb.innerHTML="";
+    ledger.forEach(e=>tb.appendChild(row(`<td>${e.doc_date}</td><td>${e.doc_no}</td><td>${fmt(e.debit)}</td><td>${fmt(e.credit)}</td><td>${fmt(e.balance)}</td>`)));
+  } catch(e) {
+    alert('خطأ: ' + e.message);
+  }
+}
+
+async function reportTB(){
+  try {
+    const tb_data = await api('/reports/trial-balance');
+    const tb=document.querySelector("#repTB tbody");
+    tb.innerHTML="";
+    tb_data.forEach(a=>tb.appendChild(row(`<td>${a.code}</td><td>${a.name}</td><td>${fmt(a.debit)}</td><td>${fmt(a.credit)}</td><td>${fmt(a.balance)}</td>`)));
+  } catch(e) {
+    alert('خطأ: ' + e.message);
+  }
+}
+
+async function reportIS(){
+  try {
+    const is_data = await api('/reports/income-statement');
+    const tb=document.querySelector("#repIS tbody");
+    tb.innerHTML="";
+    const add=(k,v)=>tb.appendChild(row(`<td>${k}</td><td>${fmt(v)}</td>`));
+    add("إيرادات المبيعات", is_data.revenue);
+    add("مردودات/خصومات", is_data.returns);
+    add("صافي الإيراد", is_data.net_revenue);
+    add("تكلفة المبيعات", is_data.cogs);
+    add("مجمل الربح", is_data.gross_profit);
+    add("مصاريف تشغيلية", is_data.opex);
+    add("دخل تشغيلي", is_data.operating_income);
+    add("إيرادات أخرى", is_data.other_income);
+    add("مصاريف أخرى", is_data.other_expense);
+    add("صافي الربح/(الخسارة)", is_data.net_profit);
+  } catch(e) {
+    alert('خطأ: ' + e.message);
+  }
+}
+
+async function reportBS(){
+  try {
+    const bs = await api('/reports/balance-sheet');
+    const tb=document.querySelector("#repBS tbody");
+    tb.innerHTML="";
+    const add=(k,v)=>tb.appendChild(row(`<td>${k}</td><td>${fmt(v)}</td>`));
+    add("الأصول", bs.assets);
+    add("الخصوم", bs.liabilities);
+    add("حقوق الملكية (بما فيها صافي الربح)", bs.equity);
+
+    const check = bs.balanced ? "✔ المعادلة متوازنة" : "⚠ تحقق من الأرصدة/الفترات";
+    document.getElementById("bs-check").textContent = check + ` — فرق = ${fmt(bs.difference)}`;
+  } catch(e) {
+    alert('خطأ: ' + e.message);
+  }
+}
+
+// Backup/Restore
+async function exportAll(){
+  try {
+    const data = await api('/backup/export');
+    const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download="accounting_backup.json";
+    a.click();
+  } catch(e) {
+    alert('خطأ: ' + e.message);
+  }
+}
+
+async function importAll(e){
+  const f=e.target.files[0];
+  if(!f) return;
+  const r=new FileReader();
+  r.onload=async()=>{
+    try{
+      const data=JSON.parse(r.result);
+      const result = await api('/backup/import', 'POST', data);
+      await loadAllData();
+      alert(result.message);
+    }catch(err){
+      alert("خطأ: " + err.message);
+    }
+  };
+  r.readAsText(f);
+}
+
+async function wipeAll(){
+  if(confirm("سيتم حذف البيانات. متابعة؟")){
+    try {
+      await api('/reset', 'POST');
+      await loadAllData();
+      alert("تم إعادة التعيين");
+    } catch(e) {
+      alert('خطأ: ' + e.message);
+    }
+  }
+}
+
+// Load data on page load
+loadAllData();
+</script>
+</body>
+</html>
