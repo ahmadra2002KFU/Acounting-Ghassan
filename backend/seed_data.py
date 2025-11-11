@@ -189,7 +189,7 @@ def seed_database():
             db.session.add(tax)
 
         db.session.commit()
-        print("✓ Database seeded successfully!")
+        print("Database seeded successfully!")
         print(f"  - {len(branches_data)} branches")
         print(f"  - {len(cost_centers)} cost centers")
         print(f"  - {len(items_data)} items with prices")

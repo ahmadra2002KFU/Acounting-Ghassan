@@ -15,15 +15,15 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize database
 db.init_app(app)
 
-# Enable CORS
-CORS(app)
+# Enable CORS - Allow all origins for development
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # ============= STATIC FILE SERVING =============
 
 @app.route('/')
 def serve_frontend():
     """Serve the main HTML file"""
-    return send_from_directory('..', 'accounting_app_offline_v2.html')
+    return send_from_directory('..', 'index.html')
 
 # ============= CONFIG API =============
 
