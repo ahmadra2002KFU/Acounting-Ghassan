@@ -68,13 +68,13 @@ python seed_data.py
 python app.py
 ```
 
-الخادم سيعمل على: `http://localhost:5000`
+الخادم سيعمل على: `http://localhost:4550`
 
 ### 4. فتح التطبيق
 
 افتح المتصفح على:
 ```
-http://localhost:5000
+http://localhost:4550
 ```
 
 أو افتح الملف:

@@ -22,7 +22,7 @@ python seed_data.py  # Creates database and seeds test data
 cd backend
 python app.py
 ```
-Server runs on `http://localhost:5000`
+Server runs on `http://localhost:4550`
 
 ### Database Management
 ```bash
@@ -153,7 +153,7 @@ All endpoints follow pattern `/api/{category}/{action}`
 
 1. Reset database: `python seed_data.py`
 2. Start server: `python app.py`
-3. Open `http://localhost:5000`
+3. Open `http://localhost:4550`
 4. Post test vouchers through frontend
 5. Verify reports for correct balances
 
