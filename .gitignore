@@ -43,6 +43,7 @@ backend/accounting.db
 # OS
 .DS_Store
 Thumbs.db
+nul
 
 # Logs
 *.log
